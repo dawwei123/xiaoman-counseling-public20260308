@@ -1,0 +1,31 @@
+[33m753b06d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m change checklimit to 32
+[33mf0ff219[m fix lazy supabase client init
+[33md90c7a2[m change downloadDoc to html type
+[33me66b2a5[m remove dotenv from server.js
+[33m01b7968[m fix dotenv import in server.js
+[33mcd9796f[m fix dotenv import
+[33m1725b31[m track download count and fix api key
+[33mad1dad5[m fix script
+[33m9f82594[m save opening message to database
+[33m4bfbbfc[m fix mobile download
+[33m41e41ee[m add disclaimer popup
+[33m68e6195[m change meta property
+[33m628f352[m add meta property
+[33ma8e495c[m fix assistant prefill error
+[33mb0626fb[m revise site name
+[33mb4130a7[m revise site name
+[33mf64d3b8[m revise site name
+[33m8cc5f3d[m picture modified
+[33med4cac4[m fix admin password
+[33mb7985b4[m fix apiKey
+[33md576b0b[m fix claude key
+[33m2e6879e[m listen on 0.0.0.0
+[33m2b714bb[m add healthcheck
+[33m2bc2cea[m hardcode key
+[33m911fca7[m fix duplicate var
+[33m6442459[m add fallback url
+[33m145e76e[m force redeploy
+[33md91fe28[m remove dotenv
+[33m59ec2fa[m fix database
+[33mfedf2f3[m debug env
+[33maa3cfc8[m first commit

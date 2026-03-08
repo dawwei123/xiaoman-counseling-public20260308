@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>諮商初談助理--小慢</title>
+<meta property="og:title" content="諮商初談助理--小慢">
+<meta property="og:description" content="在正式諮商前，小慢先幫你整理一下想法">
+<meta property="og:url" content="https://counseling-assistant.up.railway.app">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.4.15/vue.global.prod.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;600&family=DM+Mono:wght@300;400&family=Cormorant+Garamond:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fdf6ee;--surface:#fff8f0;--surface2:#faeee0;
+  --border:#e8d8c4;--accent:#b07d4a;--green:#7a9e8a;
+  --text:#4a3728;--muted:#8a7060;--dim:#c4a882;
+  --user-bg:#e8f4ee;--ai-bg:#fffaf5;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Noto Serif TC',serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;position:relative;}
+body::before{content:'';position:fixed;inset:0;z-index:0;background-image:radial-gradient(circle at 20% 20%, rgba(176,125,74,0.06) 0%, transparent 50%),radial-gradient(circle at 80% 80%, rgba(122,158,138,0.06) 0%, transparent 50%);pointer-events:none;}
+.bg-pattern{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+.bg-pattern svg{position:absolute;opacity:0.07;}
+#app{display:flex;flex-direction:column;height:100%;position:relative;z-index:1;}
+.topbar{height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;border-bottom:1px solid var(--border);flex-shrink:0;background:rgba(253,246,238,0.95);backdrop-filter:blur(8px);}
+.brand{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.1rem;color:var(--accent)}
+.btn-ghost{font-family:'DM Mono',monospace;font-size:.67rem;padding:.27rem .75rem;border-radius:3px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;transition:all .15s}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.main{flex:1;display:flex;overflow:hidden;min-height:0;}
+.left{width:37.5%;flex-shrink:0;border-right:1px solid var(--border);padding:2rem 1.5rem;display:flex;flex-direction:column;overflow-y:auto;background:rgba(255,248,240,0.7);}
+.l-badge{display:inline-block;font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--green);border:1px solid var(--green);padding:.15rem .5rem;border-radius:2px;margin-bottom:1.2rem;opacity:.85}
+.l-title{font-family:'Cormorant Garamond',serif;font-size:1.6rem;font-weight:300;line-height:1.4;margin-bottom:1rem;color:var(--text)}
+.l-body{font-size:.84rem;line-height:1.9;color:var(--muted);margin-bottom:1.5rem}
+.l-sep{width:20px;height:1px;background:var(--accent);opacity:.4;margin-bottom:1.5rem}
+.l-footer{margin-top:auto;padding-top:1.5rem;font-family:'DM Mono',monospace;font-size:.62rem;color:var(--dim)}
+.right{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;}
+.messages{flex:1;overflow-y:auto;padding:1.75rem 2rem;display:flex;flex-direction:column;gap:1.2rem;scroll-behavior:smooth;min-height:0;}
+.messages::-webkit-scrollbar{width:4px}
+.messages::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.welcome{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;opacity:.5;}
+.w-glyph{font-family:'Cormorant Garamond',serif;font-size:3rem;font-style:italic;color:var(--accent);animation:breathe 3s ease-in-out infinite}
+@keyframes breathe{0%,100%{opacity:.4}50%{opacity:1}}
+.w-text{font-family:'DM Mono',monospace;font-size:.67rem;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;margin-top:.6rem}
+.row{display:flex;gap:.65rem}
+.row.user{flex-direction:row-reverse}
+.av{width:42px;height:42px;border-radius:50%;font-family:'DM Mono',monospace;font-size:.6rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--surface2);border:1px solid var(--border);}
+.row.user .av{background:var(--accent);color:#fff;font-weight:600;}
+.bwrap{display:flex;flex-direction:column;max-width:68%}
+.row.user .bwrap{align-items:flex-end}
+.bubble{padding:.75rem .95rem;border-radius:12px;font-size:.87rem;line-height:1.8;white-space:pre-wrap;word-break:break-word}
+.row.ai .bubble{background:var(--ai-bg);border:1px solid var(--border);border-top-left-radius:3px;}
+.row.user .bubble{background:var(--user-bg);border:1px solid #c8e0d0;border-top-right-radius:3px;}
+.ts{font-family:'DM Mono',monospace;font-size:.6rem;color:var(--dim);margin-top:.28rem}
+.typing{display:flex;gap:3px;align-items:center;padding:.35rem 0}
+.typing span{width:5px;height:5px;background:var(--dim);border-radius:50%;animation:blink 1.1s ease-in-out infinite}
+.typing span:nth-child(2){animation-delay:.17s}
+.typing span:nth-child(3){animation-delay:.34s}
+@keyframes blink{0%,100%{opacity:.2}50%{opacity:.8}}
+.input-area{flex-shrink:0;padding:.9rem 2rem 1.25rem;border-top:1px solid var(--border);background:rgba(253,246,238,0.97);}
+.input-wrap{display:flex;align-items:flex-end;gap:.6rem;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:.65rem .8rem;transition:border-color .18s;box-shadow:0 2px 8px rgba(176,125,74,0.08);}
+.input-wrap:focus-within{border-color:var(--accent);}
+textarea{flex:1;background:none;border:none;outline:none;color:var(--text);font-family:'Noto Serif TC',serif;font-size:.88rem;line-height:1.6;resize:none;min-height:22px;max-height:140px}
+textarea::placeholder{color:var(--dim)}
+.send-btn{width:32px;height:32px;background:var(--accent);border:none;border-radius:8px;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:opacity .15s;flex-shrink:0;}
+.send-btn:hover{opacity:.82}
+.send-btn:disabled{opacity:.3;cursor:default}
+.hint{font-family:'DM Mono',monospace;font-size:.61rem;color:var(--dim);text-align:center;margin-top:.45rem}
+
+@media (max-width: 768px) {
+  .main{flex-direction:column;}
+  .left{width:100%;border-right:none;border-bottom:1px solid var(--border);padding:.9rem 1rem;max-height:140px;overflow-y:auto;flex-shrink:0;}
+  .l-title{font-size:1.1rem;margin-bottom:.4rem;}
+  .l-badge{margin-bottom:.6rem;}
+  .l-body{font-size:.76rem;line-height:1.6;margin-bottom:.5rem;}
+  .l-sep,.l-footer{display:none;}
+  .messages{padding:.9rem 1rem;}
+  .input-area{padding:.6rem .9rem .9rem;}
+  .bwrap{max-width:82%;}
+  .topbar{padding:0 .9rem;height:46px;}
+  .brand{font-size:.9rem;}
+  .btn-ghost{font-size:.6rem;padding:.2rem .5rem;}
+  .av{width:32px;height:32px;}
+}
+</style>
+</head>
+<body>
+  <!-- 免責聲明彈跳視窗 -->
+<div id="disclaimer" style="position:fixed;inset:0;z-index:9999;background:rgba(74,55,40,0.6);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);">
+  <div style="background:#fff8f0;border:1px solid #e8d8c4;border-radius:16px;padding:2rem 2.5rem;max-width:420px;width:90%;box-shadow:0 8px 32px rgba(74,55,40,0.15);text-align:center;">
+    <div style="font-family:'Cormorant Garamond',serif;font-size:1.3rem;color:#b07d4a;margin-bottom:1rem;">使用說明</div>
+    <p style="font-family:'Noto Serif TC',serif;font-size:.88rem;line-height:1.9;color:#4a3728;margin-bottom:1.5rem;">本系統是作為諮商前協助使用者整理思緒，以提升諮商效能所使用。<br><br>如果有緊急需求請勿使用此系統。</p>
+    <button onclick="document.getElementById('disclaimer').style.display='none'" style="font-family:'DM Mono',monospace;font-size:.78rem;padding:.6rem 2rem;background:#b07d4a;color:#fff;border:none;border-radius:8px;cursor:pointer;letter-spacing:.05em;">我了解，同意繼續</button>
+  </div>
+</div>
+<div class="bg-pattern">
+  <svg width="120" height="120" style="top:8%;left:5%"><path d="M60 90 C20 60 10 30 30 20 C45 12 60 30 60 30 C60 30 75 12 90 20 C110 30 100 60 60 90Z" fill="none" stroke="#b07d4a" stroke-width="1.5"/></svg>
+  <svg width="140" height="100" style="bottom:15%;right:6%"><ellipse cx="70" cy="50" rx="55" ry="38" fill="none" stroke="#7a9e8a" stroke-width="1.5"/><path d="M70 12 Q85 30 70 50 Q55 30 70 12" fill="none" stroke="#7a9e8a" stroke-width="1.2"/><path d="M25 45 Q40 35 55 50" fill="none" stroke="#7a9e8a" stroke-width="1.2"/><path d="M85 50 Q100 35 115 45" fill="none" stroke="#7a9e8a" stroke-width="1.2"/></svg>
+  <svg width="100" height="80" style="top:55%;left:3%"><path d="M50 40 C30 20 5 25 10 45 C15 60 40 55 50 40Z" fill="none" stroke="#b07d4a" stroke-width="1.2"/><path d="M50 40 C70 20 95 25 90 45 C85 60 60 55 50 40Z" fill="none" stroke="#b07d4a" stroke-width="1.2"/><path d="M50 40 C45 55 48 65 50 70 C52 65 55 55 50 40Z" fill="none" stroke="#b07d4a" stroke-width="1"/></svg>
+  <svg width="120" height="60" style="top:20%;right:8%"><path d="M30 30 C30 15 50 15 60 30 C70 45 90 45 90 30 C90 15 70 15 60 30 C50 45 30 45 30 30Z" fill="none" stroke="#c4a882" stroke-width="1.5"/></svg>
+</div>
+<div id="app">
+  <div class="topbar">
+    <div class="brand">{{ config.site_name || '諮商初談助理--小慢' }}</div>
+    <div style="display:flex;gap:.5rem;align-items:center">
+      <button class="btn-ghost" @click="downloadDoc">下載對話</button>
+      <button class="btn-ghost" @click="clearChat">清除對話</button>
+    </div>
+  </div>
+  <div class="main">
+    <div class="left">
+      <h1 class="l-title">{{ config.intro_title }}</h1>
+      <p class="l-body" style="white-space:pre-wrap;" v-text="config.intro_body"></p>
+      <div class="l-sep"></div>
+      <div class="l-footer">{{ config.footer_text }}</div>
+    </div>
+    <div class="right">
+      <div class="messages" ref="msgBox">
+        <div class="welcome" v-if="!messages.length">
+          <div class="w-glyph">✦</div>
+          <div class="w-text">輸入訊息開始對話</div>
+        </div>
+        <div v-for="(m,i) in messages" :key="i" :class="['row', m.role]">
+          <div class="av">
+            <img v-if="m.role==='ai'" :src="avatarSrc" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">
+            <span v-else>你</span>
+          </div>
+          <div class="bwrap">
+            <div class="bubble">
+              <div class="typing" v-if="m.typing"><span></span><span></span><span></span></div>
+              <span v-else>{{ m.content }}</span>
+            </div>
+            <div class="ts">{{ m.time }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="input-area">
+        <div class="input-wrap">
+          <textarea v-model="input" ref="inputEl" placeholder="輸入你的問題..." rows="1" @keydown="handleKey" @input="resize"></textarea>
+          <button class="send-btn" :disabled="busy" @click="send">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+        <div class="hint">Enter 送出 · Shift+Enter 換行</div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+const{createApp,ref,reactive,nextTick,onMounted}=Vue;
+createApp({setup(){
+  const config=reactive({});
+  const messages=ref([]);
+  const input=ref('');
+  const busy=ref(false);
+  const msgBox=ref(null);
+  const inputEl=ref(null);
+  const sessionId=ref(sessionStorage.getItem('sid')||'');
+  const avatarSrc=ref('/xiaoman'+Math.ceil(Math.random()*5)+'.png');
+
+  function nowStr(){return new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});}
+  function scrollBottom(){nextTick(()=>{if(msgBox.value)msgBox.value.scrollTop=msgBox.value.scrollHeight;});}
+
+  onMounted(async()=>{
+    try{
+      const r=await fetch('/api/config');
+      const c=await r.json();
+      Object.assign(config,c);
+      document.title=c.site_name||'諮商初談助理--小慢';
+      if(c.opening_messages){
+        const opts=c.opening_messages.split('|').map(s=>s.trim()).filter(Boolean);
+        if(opts.length){
+          const picked=opts[Math.floor(Math.random()*opts.length)];
+          messages.value.push({role:'ai',content:picked,time:nowStr()});
+          scrollBottom();
+          const newSid=crypto.randomUUID();
+          sessionId.value=newSid;
+          sessionStorage.setItem('sid',newSid);
+          fetch('/api/opening',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session_id:newSid,message:picked})}).catch(e=>console.error(e));
+        }
+      }
+    }catch(e){}
+  });
+
+  function checkLimit(){
+    const rounds=messages.value.filter(m=>m.role==='user').length;
+    if(rounds>=32){
+      busy.value=true;
+      const last=messages.value[messages.value.length-1];
+      if(!last||last.content!=='不好意思，我們對話次數已經超過限制了。小慢需要先與你停在這裡，請記得下載我們的對話紀錄以免遺失這份記憶喔~~'){
+        messages.value.push({role:'ai',content:'不好意思，我們對話次數已經超過限制了。小慢需要先與你停在這裡，請記得下載我們的對話紀錄以免遺失這份記憶喔~~',time:nowStr()});
+        scrollBottom();
+      }
+      return true;
+    }
+    return false;
+  }
+
+  async function downloadDoc(){
+  if(!messages.value.length){alert('目前沒有對話可以下載！');return;}
+  let html='<html><head><meta charset="utf-8"><style>';
+  html+='body{font-family:新細明體,serif;margin:40px;color:#333;max-width:800px;margin:40px auto;}';
+  html+='.title{font-size:18px;font-weight:bold;text-align:center;margin-bottom:5px;}';
+  html+='.date{font-size:11px;color:#999;text-align:center;margin-bottom:20px;}';
+  html+='.msg{margin-bottom:15px;}';
+  html+='.name{font-size:11px;color:#888;margin-bottom:3px;}';
+  html+='.bubble{padding:8px 12px;border-radius:6px;font-size:13px;line-height:1.8;}';
+  html+='.ai .bubble{background:#fff8f0;border:1px solid #e8d8c4;}';
+  html+='.user .bubble{background:#e8f4ee;border:1px solid #c8e0d0;}';
+  html+='.footer{margin-top:30px;font-size:11px;color:#bbb;text-align:center;}';
+  html+='</style></head><body>';
+  html+='<div class="title">與小慢的對話紀錄</div>';
+  html+='<div class="date">'+new Date().toLocaleString('zh-TW')+'</div>';
+  html+='<hr style="border:none;border-top:1px solid #e8d8c4;margin-bottom:20px;">';
+  for(const m of messages.value){
+    if(!m.content||m.typing)continue;
+    const isUser=m.role==='user';
+    const name=isUser?'你':'小慢';
+    const cls=isUser?'user':'ai';
+    html+=`<div class="msg ${cls}"><div class="name">${name} ${m.time||''}</div><div class="bubble">${m.content.replace(/\n/g,'<br>')}</div></div>`;
+  }
+  html+='<div class="footer">本紀錄由小慢諮商助理產生，僅供個人參考使用。</div>';
+  html+='</body></html>';
+  fetch('/api/download-log',{method:'POST'}).catch(e=>console.error(e));
+  const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='小慢對話紀錄.html';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+  async function send(){
+    const text=input.value.trim();
+    if(!text||busy.value)return;
+    if(checkLimit())return;
+    input.value='';
+    if(inputEl.value)inputEl.value.style.height='auto';
+    messages.value.push({role:'user',content:text,time:nowStr()});
+    const aiIdx=messages.value.length;
+    messages.value.push({role:'ai',content:'',time:nowStr(),typing:true});
+    scrollBottom();busy.value=true;
+    try{
+      const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text,session_id:sessionId.value})});
+      if(!res.ok){const e=await res.json();messages.value[aiIdx].typing=false;messages.value[aiIdx].content='❌ '+(e.error||'錯誤');busy.value=false;return;}
+      const sid=res.headers.get('X-Session-Id');if(sid){sessionId.value=sid;sessionStorage.setItem('sid',sid);}
+      messages.value[aiIdx].typing=false;
+      const reader=res.body.getReader();const decoder=new TextDecoder();
+      while(true){
+        const{done,value}=await reader.read();if(done)break;
+        const lines=decoder.decode(value).split('\n');
+        for(const line of lines){
+          if(!line.startsWith('data:'))continue;
+          try{const d=JSON.parse(line.slice(5).trim());if(d.text){messages.value[aiIdx].content+=d.text;scrollBottom();}if(d.error){messages.value[aiIdx].content='❌ '+d.error;}}catch(e){console.log('parse error',line,e);}
+        }
+      }
+    }catch(e){messages.value[aiIdx].typing=false;messages.value[aiIdx].content='❌ 連線錯誤';}
+    busy.value=false;scrollBottom();
+  }
+
+  function clearChat(){
+    messages.value=[];
+    sessionId.value='';
+    sessionStorage.removeItem('sid');
+    if(config.opening_messages){
+      const opts=config.opening_messages.split('|').map(s=>s.trim()).filter(Boolean);
+      if(opts.length){
+        const picked=opts[Math.floor(Math.random()*opts.length)];
+        messages.value.push({role:'ai',content:picked,time:nowStr()});
+      }
+    }
+  }
+
+  function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}
+  function resize(e){const el=e.target;el.style.height='auto';el.style.height=Math.min(el.scrollHeight,140)+'px';}
+
+  return{config,messages,input,busy,msgBox,inputEl,send,clearChat,handleKey,resize,downloadDoc,avatarSrc};
+}}).mount('#app');
+</script>
+</body>
+</html>
