@@ -28,6 +28,10 @@ body::before{content:'';position:fixed;inset:0;z-index:0;background-image:radial
 .brand{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1.1rem;color:var(--accent)}
 .btn-ghost{font-family:'DM Mono',monospace;font-size:.67rem;padding:.27rem .75rem;border-radius:3px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;transition:all .15s}
 .btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
+.dl-wrap{position:relative;display:inline-block;}
+.dl-menu{position:absolute;top:100%;right:0;margin-top:4px;background:#fff8f0;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(74,55,40,0.12);z-index:100;min-width:148px;overflow:hidden;}
+.dl-menu button{display:block;width:100%;padding:.55rem 1rem;font-family:'DM Mono',monospace;font-size:.67rem;background:none;border:none;color:var(--text);cursor:pointer;text-align:left;transition:background .12s;}
+.dl-menu button:hover{background:var(--surface2);}
 .main{flex:1;display:flex;overflow:hidden;min-height:0;}
 .left{width:37.5%;flex-shrink:0;border-right:1px solid var(--border);padding:2rem 1.5rem;display:flex;flex-direction:column;overflow-y:auto;background:rgba(255,248,240,0.7);}
 .l-badge{display:inline-block;font-family:'DM Mono',monospace;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--green);border:1px solid var(--green);padding:.15rem .5rem;border-radius:2px;margin-bottom:1.2rem;opacity:.85}
@@ -104,14 +108,20 @@ textarea::placeholder{color:var(--dim)}
   <div class="topbar">
     <div class="brand">{{ config.site_name || '諮商初談助理--小慢' }}</div>
     <div style="display:flex;gap:.5rem;align-items:center">
-      <button class="btn-ghost" @click="downloadDoc">下載對話</button>
+      <div class="dl-wrap">
+        <button class="btn-ghost" @click="toggleDlMenu">下載對話 ▾</button>
+        <div class="dl-menu" v-if="showDlMenu">
+          <button @click="downloadDoc('html')">📄 HTML 格式</button>
+          <button @click="downloadDoc('txt')">📝 TXT 純文字</button>
+        </div>
+      </div>
       <button class="btn-ghost" @click="clearChat">清除對話</button>
     </div>
   </div>
   <div class="main">
     <div class="left">
       <h1 class="l-title">{{ config.intro_title }}</h1>
-      <p class="l-body" style="white-space:pre-wrap;" v-text="config.intro_body"></p>
+      <p class="l-body" style="white-space:pre-wrap;" v-html="config.intro_body"></p>
       <div class="l-sep"></div>
       <div class="l-footer">{{ config.footer_text }}</div>
     </div>
@@ -158,6 +168,7 @@ createApp({setup(){
   const inputEl=ref(null);
   const sessionId=ref(sessionStorage.getItem('sid')||'');
   const avatarSrc=ref('/xiaoman'+Math.ceil(Math.random()*5)+'.png');
+  const showDlMenu=ref(false);
 
   function nowStr(){return new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});}
   function scrollBottom(){nextTick(()=>{if(msgBox.value)msgBox.value.scrollTop=msgBox.value.scrollHeight;});}
@@ -181,7 +192,12 @@ createApp({setup(){
         }
       }
     }catch(e){}
+    window.addEventListener('click',(e)=>{
+      if(!e.target.closest('.dl-wrap'))showDlMenu.value=false;
+    });
   });
+
+  function toggleDlMenu(){showDlMenu.value=!showDlMenu.value;}
 
   function checkLimit(){
     const rounds=messages.value.filter(m=>m.role==='user').length;
@@ -197,40 +213,57 @@ createApp({setup(){
     return false;
   }
 
-  async function downloadDoc(){
-  if(!messages.value.length){alert('目前沒有對話可以下載！');return;}
-  let html='<html><head><meta charset="utf-8"><style>';
-  html+='body{font-family:新細明體,serif;margin:40px;color:#333;max-width:800px;margin:40px auto;}';
-  html+='.title{font-size:18px;font-weight:bold;text-align:center;margin-bottom:5px;}';
-  html+='.date{font-size:11px;color:#999;text-align:center;margin-bottom:20px;}';
-  html+='.msg{margin-bottom:15px;}';
-  html+='.name{font-size:11px;color:#888;margin-bottom:3px;}';
-  html+='.bubble{padding:8px 12px;border-radius:6px;font-size:13px;line-height:1.8;}';
-  html+='.ai .bubble{background:#fff8f0;border:1px solid #e8d8c4;}';
-  html+='.user .bubble{background:#e8f4ee;border:1px solid #c8e0d0;}';
-  html+='.footer{margin-top:30px;font-size:11px;color:#bbb;text-align:center;}';
-  html+='</style></head><body>';
-  html+='<div class="title">與小慢的對話紀錄</div>';
-  html+='<div class="date">'+new Date().toLocaleString('zh-TW')+'</div>';
-  html+='<hr style="border:none;border-top:1px solid #e8d8c4;margin-bottom:20px;">';
-  for(const m of messages.value){
-    if(!m.content||m.typing)continue;
-    const isUser=m.role==='user';
-    const name=isUser?'你':'小慢';
-    const cls=isUser?'user':'ai';
-    html+=`<div class="msg ${cls}"><div class="name">${name} ${m.time||''}</div><div class="bubble">${m.content.replace(/\n/g,'<br>')}</div></div>`;
+  async function downloadDoc(format='html'){
+    showDlMenu.value=false;
+    if(!messages.value.length){alert('目前沒有對話可以下載！');return;}
+    fetch('/api/download-log',{method:'POST'}).catch(e=>console.error(e));
+
+    if(format==='txt'){
+      let txt='與小慢的對話紀錄\n';
+      txt+=new Date().toLocaleString('zh-TW')+'\n';
+      txt+='='.repeat(40)+'\n\n';
+      for(const m of messages.value){
+        if(!m.content||m.typing)continue;
+        const name=m.role==='user'?'你':'小慢';
+        txt+=`【${name}】${m.time||''}\n${m.content}\n\n`;
+      }
+      txt+='='.repeat(40)+'\n本紀錄由小慢諮商助理產生，僅供個人參考使用。';
+      const blob=new Blob([txt],{type:'text/plain;charset=utf-8'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      a.href=url;a.download='小慢對話紀錄.txt';
+      a.click();URL.revokeObjectURL(url);
+    }else{
+      let html='<html><head><meta charset="utf-8"><style>';
+      html+='body{font-family:新細明體,serif;margin:40px;color:#333;max-width:800px;margin:40px auto;}';
+      html+='.title{font-size:18px;font-weight:bold;text-align:center;margin-bottom:5px;}';
+      html+='.date{font-size:11px;color:#999;text-align:center;margin-bottom:20px;}';
+      html+='.msg{margin-bottom:15px;}';
+      html+='.name{font-size:11px;color:#888;margin-bottom:3px;}';
+      html+='.bubble{padding:8px 12px;border-radius:6px;font-size:13px;line-height:1.8;}';
+      html+='.ai .bubble{background:#fff8f0;border:1px solid #e8d8c4;}';
+      html+='.user .bubble{background:#e8f4ee;border:1px solid #c8e0d0;}';
+      html+='.footer{margin-top:30px;font-size:11px;color:#bbb;text-align:center;}';
+      html+='</style></head><body>';
+      html+='<div class="title">與小慢的對話紀錄</div>';
+      html+='<div class="date">'+new Date().toLocaleString('zh-TW')+'</div>';
+      html+='<hr style="border:none;border-top:1px solid #e8d8c4;margin-bottom:20px;">';
+      for(const m of messages.value){
+        if(!m.content||m.typing)continue;
+        const isUser=m.role==='user';
+        const name=isUser?'你':'小慢';
+        const cls=isUser?'user':'ai';
+        html+=`<div class="msg ${cls}"><div class="name">${name} ${m.time||''}</div><div class="bubble">${m.content.replace(/\n/g,'<br>')}</div></div>`;
+      }
+      html+='<div class="footer">本紀錄由小慢諮商助理產生，僅供個人參考使用。</div>';
+      html+='</body></html>';
+      const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      a.href=url;a.download='小慢對話紀錄.html';
+      a.click();URL.revokeObjectURL(url);
+    }
   }
-  html+='<div class="footer">本紀錄由小慢諮商助理產生，僅供個人參考使用。</div>';
-  html+='</body></html>';
-  fetch('/api/download-log',{method:'POST'}).catch(e=>console.error(e));
-  const blob=new Blob([html],{type:'text/html;charset=utf-8'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;
-  a.download='小慢對話紀錄.html';
-  a.click();
-  URL.revokeObjectURL(url);
-}
 
   async function send(){
     const text=input.value.trim();
@@ -276,7 +309,7 @@ createApp({setup(){
   function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}
   function resize(e){const el=e.target;el.style.height='auto';el.style.height=Math.min(el.scrollHeight,140)+'px';}
 
-  return{config,messages,input,busy,msgBox,inputEl,send,clearChat,handleKey,resize,downloadDoc,avatarSrc};
+  return{config,messages,input,busy,msgBox,inputEl,send,clearChat,handleKey,resize,downloadDoc,avatarSrc,showDlMenu,toggleDlMenu};
 }}).mount('#app');
 </script>
 </body>
